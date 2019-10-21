@@ -13,8 +13,7 @@ Jou-Hui Ho, Hojin Kang
 
 The main problem to solve consists of the generation of new hand-drawn sketch drawings from training examples of <i>Quick, Draw!</i>, a sketching game. The solution will be implemented using an encoder-decoder autoregressive model.  
   
-- <b>Input:</b> The input of the model is a dataset of hand-drawn sketches, each represented as a sequence of motor actions controlling a pen: the direction of the movement, when to lift the pen up, and when to stop drawing. More concretely, each input is a vector containing 5 elements: <img src="https://latex.codecogs.com/gif.latex?(\Delta&space;x,&space;\Delta&space;y,&space;p_1,&space;p_2,&space;p_3)" title="(\Delta x, \Delta y, p_1, p_2, p_3)" /> 
-, where the first two elements are the offset distance from the previous point, and the last 3 elements represents a one-hot vector of the 3 mentioned states. The total input is the concatenation of the direct sequence of vectors and the inverse one.  
+- <b>Input:</b> The input of the model is a dataset of hand-drawn sketches, each represented as a sequence of motor actions controlling a pen: the direction of the movement, when to lift the pen up, and when to stop drawing. More concretely, each input is a vector containing 5 elements: ![](http://latex.codecogs.com/gif.latex?%28%5CDelta%20x%2C%20%5CDelta%20y%2C%20p_1%2C%20p_2%2C%20p_3%29), where the first two elements are the offset distance from the previous point, and the last 3 elements represents a one-hot vector of the 3 mentioned states. The total input is the concatenation of the direct sequence of vectors and the inverse one.  
   
 - <b>Output:</b> At each test, our autoregressive model outputs the 5 element vector’s probability distribution, and then we get samples of that distribution. Hence, out complete model should output a vector of the same structure than the given one at the input.  
   
@@ -41,23 +40,22 @@ Ha & Eck’s previous work includes a simplification of the dataset, scaling eac
 
 ### Initial architecture  
 
-We will implement a Sequence-to-Sequence Variational Autoencoder (VAE), consisting of two neural networks: an encoder and a decoder. Our encoder is a bidirectional RNN that receives the concatenation of both direct and inverse sequences of the sketch strokes, and passes it through a fully connected layer, resulting 2 parameters $\mu$ and $\sigma$, each of size $N_z$.   
+We will implement a Sequence-to-Sequence Variational Autoencoder (VAE), consisting of two neural networks: an encoder and a decoder. Our encoder is a bidirectional RNN that receives the concatenation of both direct and inverse sequences of the sketch strokes, and passes it through a fully connected layer, resulting 2 parameters ![](http://latex.codecogs.com/gif.latex?%5Cmu) and ![](http://latex.codecogs.com/gif.latex?%5Csigma), each of size ![](http://latex.codecogs.com/gif.latex?N_z).   
+![](http://latex.codecogs.com/gif.latex?%5Cmu%20%3D%20W_%5Cmu%20h%20&plus;%20b_%5Cmu%2C%20%5Cquad%20%5Chat%7B%5Csigma%7D%20%3D%20W_%5Csigma%20h%20&plus;%20b_%5Csigma%2C%20%5Cquad%20%5Csigma%20%3D%20exp%28%5Cfrac%7B%5Chat%7B%5Csigma%7D%7D%7B2%7D%29)
 
-$$\mu = W_\mu h + b_\mu, \quad \hat{\sigma} = W_\sigma h + b_\sigma, \quad \sigma = exp(\frac{\hat{\sigma}}{2})$$
-  
-Then, using these parameters, along with $\mathcal{N}(0,I)$, we construct a distribution for a latent vector of size $N_z$, given by $z = \mu + \sigma \cdot \mathcal{N}(0,I)$. It is important to note that the outputs of the encoder are the parameters of the gaussian distribution ($\mu$ and $\sigma$), and the next step consists in sampling from that distribution, obtaining a vector of size $N_z$.   
+Then, using these parameters, along with ![](http://latex.codecogs.com/gif.latex?%5Cmathcal%7BN%7D%280%2CI%29), we construct a distribution for a latent vector of size ![](http://latex.codecogs.com/gif.latex?N_z), given by ![](http://latex.codecogs.com/gif.latex?z%20%3D%20%5Cmu%20&plus;%20%5Csigma%20%5Ccdot%20%5Cmathcal%7BN%7D%280%2CI%29). It is important to note that the outputs of the encoder are the parameters of the gaussian distribution ( ![](http://latex.codecogs.com/gif.latex?%5Cmu) and ![](http://latex.codecogs.com/gif.latex?%5Csigma)), and the next step consists in sampling from that distribution, obtaining a vector of size ![](http://latex.codecogs.com/gif.latex?N_z).   
   
 Under this encoding scheme, the latent vector z is not deterministic but a random vector condition the input sketch.  
   
-The decoder is an autoregressive RNN that takes that latent vector $z$ and samples output sketches. At each step i, the decoder is fed with the previous point $S_{i-1}$ and the latent vector $z$ as a concatenated input $x_i$. The position of each stroke is modeled as a Gaussian Mixture Model, with $M$ normal distributions, and $(q_1, q_2, q_3)$ as a categorical distribution to model $(p_1, p_2, p_3)$.   
+The decoder is an autoregressive RNN that takes that latent vector ![](http://latex.codecogs.com/gif.latex?z) and samples output sketches. At each step i, the decoder is fed with the previous point ![](http://latex.codecogs.com/gif.latex?S_%7Bi-1%7D) and the latent vector ![](http://latex.codecogs.com/gif.latex?z) as a concatenated input ![](http://latex.codecogs.com/gif.latex?x_i). The position of each stroke is modeled as a Gaussian Mixture Model, with ![](http://latex.codecogs.com/gif.latex?M) normal distributions, and ![](http://latex.codecogs.com/gif.latex?%28q_1%2C%20q_2%2C%20q_3%29) as a categorical distribution to model ![](http://latex.codecogs.com/gif.latex?%28p_1%2C%20p_2%2C%20p_3%29).   
   
-$$p(\Delta x, \Delta y) = \sum_{j=1}^M \Pi_j \mathcal{N}(\Delta x, \Delta y | \mu_{x,j} , \mu_{y,j} , \sigma_{x,j} , \sigma_{y,j} , \rho_{xy,j})$$, where $\sum_{j=1}^M=1$  
+![](http://latex.codecogs.com/gif.latex?p%28%5CDelta%20x%2C%20%5CDelta%20y%29%20%3D%20%5Csum_%7Bj%3D1%7D%5EM%20%5CPi_j%20%5Cmathcal%7BN%7D%28%5CDelta%20x%2C%20%5CDelta%20y%20%7C%20%5Cmu_%7Bx%2Cj%7D%20%2C%20%5Cmu_%7By%2Cj%7D%20%2C%20%5Csigma_%7Bx%2Cj%7D%20%2C%20%5Csigma_%7By%2Cj%7D%20%2C%20%5Crho_%7Bxy%2Cj%7D%29), where ![](http://latex.codecogs.com/gif.latex?%24%5Csum_%7Bj%3D1%7D%5EM%3D1%24).
   
-The output of the decoder is the concatenation of $6M+3$ parameters: 5M of each ($\mu_{x}$ , $\mu_{y}$ , $\sigma_{x}$ , $\sigma_{y}$, $\rho_{xy}$)  parameters of the $M$ distributions, $M$ parameters due to the mixture weights of each distribution, and the 3 logits needed to generate $(q_1, q_2, q_3)$.   
+The output of the decoder is the concatenation of ![](http://latex.codecogs.com/gif.latex?%246M&plus;3%24) parameters: ![](http://latex.codecogs.com/gif.latex?5M) of each ![](http://latex.codecogs.com/gif.latex?%28%24%5Cmu_%7Bx%7D%24%20%2C%20%24%5Cmu_%7By%7D%24%20%2C%20%24%5Csigma_%7Bx%7D%24%20%2C%20%24%5Csigma_%7By%7D%24%2C%20%24%5Crho_%7Bxy%7D%24%29)  parameters of the ![](http://latex.codecogs.com/gif.latex?M) distributions, ![](http://latex.codecogs.com/gif.latex?M) parameters due to the mixture weights of each distribution, and the 3 logits needed to generate ![](http://latex.codecogs.com/gif.latex?%28q_1%2C%20q_2%2C%20q_3%29).   
   
-$$y_i = \Big[\big(\Pi_1 \mu_x \mu_y \sigma_x \sigma_y \rho_{xy}\big)_1 \dots \big(\Pi_1 \mu_x \mu_y \sigma_x \sigma_y \rho_{xy}\big)_M \big(\hat{q}_1 \hat{q}_2 \hat{q}_3\big)\Big]$$  
+![](http://latex.codecogs.com/gif.latex?%24%24y_i%20%3D%20%5CBig%5B%5Cbig%28%5CPi_1%20%5Cmu_x%20%5Cmu_y%20%5Csigma_x%20%5Csigma_y%20%5Crho_%7Bxy%7D%5Cbig%29_1%20%5Cdots%20%5Cbig%28%5CPi_1%20%5Cmu_x%20%5Cmu_y%20%5Csigma_x%20%5Csigma_y%20%5Crho_%7Bxy%7D%5Cbig%29_M%20%5Cbig%28%5Chat%7Bq%7D_1%20%5Chat%7Bq%7D_2%20%5Chat%7Bq%7D_3%5Cbig%29%5CBig%5D%24%24)
   
-Finally, we apply softmax to each type of parameters, and sample a 5 element vector from the output distribution. This final vector is the actual stroke element $S’_i$ for that time step, and it’s used as input for the next time step. And so on, until it returns $p_3=1$, or when it has reached the maximum number of samples.
+Finally, we apply softmax to each type of parameters, and sample a 5 element vector from the output distribution. This final vector is the actual stroke element ![](http://latex.codecogs.com/gif.latex?%24S%27_i%24) for that time step, and it’s used as input for the next time step. And so on, until it returns ![](http://latex.codecogs.com/gif.latex?%24p_3%3D1%24), or when it has reached the maximum number of samples.
 
 The following image shows the architecture of the VAE.
 
@@ -65,57 +63,50 @@ The following image shows the architecture of the VAE.
 
 The following equations characterize the backward enconder of the architecture.
 
-$$h_{0}^{B} = 0$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7B0%7D%5E%7BB%7D%20%3D%200%24%24)
 
-$$h_{i}^{B} = f_{i}(S_{n + 1 - i}U_{e}^{B} + h_{i-1}^{B}V_{e}^{B} + b_{e}^{B})$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7Bi%7D%5E%7BB%7D%20%3D%20f_%7Bi%7D%28S_%7Bn%20&plus;%201%20-%20i%7DU_%7Be%7D%5E%7BB%7D%20&plus;%20h_%7Bi-1%7D%5E%7BB%7DV_%7Be%7D%5E%7BB%7D%20&plus;%20b_%7Be%7D%5E%7BB%7D%29%24%24)
 
-$$h_{\leftarrow} = h_{n}^{B}$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7B%5Cleftarrow%7D%20%3D%20h_%7Bn%7D%5E%7BB%7D%24%24)
 
 We also have the equations that characterize the forward encoder of the architecture.
 
-$$h_{0}^{F} = 0$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7B0%7D%5E%7BF%7D%20%3D%200%24%24)
 
-$$h_{i}^{F} = f_{i}(S_{i}U_{e}^{F} + h_{i-1}^{F}V_{e}^{F} + b_{e}^{F})$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7Bi%7D%5E%7BF%7D%20%3D%20f_%7Bi%7D%28S_%7Bi%7DU_%7Be%7D%5E%7BF%7D%20&plus;%20h_%7Bi-1%7D%5E%7BF%7DV_%7Be%7D%5E%7BF%7D%20&plus;%20b_%7Be%7D%5E%7BF%7D%29%24%24)
 
-$$h_{\rightarrow} = h_{n}^{F}$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7B%5Crightarrow%7D%20%3D%20h_%7Bn%7D%5E%7BF%7D%24%24)
 
-Once $h_{\leftarrow}$ and $h_{\rightarrow}$ are calculated, $h$ is the vector resulting from both vectors being concatenated.
+Once ![](http://latex.codecogs.com/gif.latex?%24h_%7B%5Cleftarrow%7D%24) and ![](http://latex.codecogs.com/gif.latex?%24h_%7B%5Crightarrow%7D%24) are calculated, ![](http://latex.codecogs.com/gif.latex?h)is the vector resulting from both vectors being concatenated.
 
-$$h = [h_{\leftarrow}, h_{\rightarrow}]$$
+![](http://latex.codecogs.com/gif.latex?%24%24h%20%3D%20%5Bh_%7B%5Cleftarrow%7D%2C%20h_%7B%5Crightarrow%7D%5D%24%24)
 
-From the previous value we obtain $\sigma$ and $\mu$, used to calculate the normal distribution given by $z = \mu + \sigma \cdot \mathcal{N}(0,I)$. This can be done with the following equations.
+From the previous value we obtain (http://latex.codecogs.com/gif.latex?%5Csigma)) and (http://latex.codecogs.com/gif.latex?%5Cmu)), with the following equations.
 
-$$\mu = W_{\mu}h + b_{\mu}$$
+![](http://latex.codecogs.com/gif.latex?%24%24%5Cmu%20%3D%20W_%7B%5Cmu%7Dh%20&plus;%20b_%7B%5Cmu%7D%24%24)
 
-$$\hat{\sigma} = W_{\sigma}h + b_{\sigma}$$
+![](http://latex.codecogs.com/gif.latex?%24%24%5Chat%7B%5Csigma%7D%20%3D%20W_%7B%5Csigma%7Dh%20&plus;%20b_%7B%5Csigma%7D%24%24)
 
-$$\sigma = exp(\frac{\hat{\sigma}}{2})$$
+![](http://latex.codecogs.com/gif.latex?%24%24%5Csigma%20%3D%20exp%28%5Cfrac%7B%5Chat%7B%5Csigma%7D%7D%7B2%7D%29%24%24)
 
- Once the value of $z$ is determined, the values for the decoder are given by the following equations.
+ Once the value of ![](http://latex.codecogs.com/gif.latex?z) is determined, the values for the decoder are given by the following equations.
 
-$$h_{0} = f_{0}(z)$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7B0%7D%20%3D%20f_%7B0%7D%28z%29%24%24)
 
-$$h_{i} = f_{i}(zR_{D} + h_{i-1}V_{D} + S_{i-1}U_{D} + b_{D})$$
+![](http://latex.codecogs.com/gif.latex?%24%24h_%7Bi%7D%20%3D%20f_%7Bi%7D%28zR_%7BD%7D%20&plus;%20h_%7Bi-1%7DV_%7BD%7D%20&plus;%20S_%7Bi-1%7DU_%7BD%7D%20&plus;%20b_%7BD%7D%29%24%24)
 
-Then we calculate the value for $y_{i}$ as.
+Then we calculate the value for ![](http://latex.codecogs.com/gif.latex?y_i) as.
 
-$$y_{i} = W_{y}h_{i} + b_{y}$$
+![](http://latex.codecogs.com/gif.latex?%24%24y_%7Bi%7D%20%3D%20W_%7By%7Dh_%7Bi%7D%20&plus;%20b_%7By%7D%24%24)
 
-The values for $y_{i}$ correspond to the values for the $M$ Gaussian Mixture Models (GMM) for the next data point, and the type of stroke (lifted pen, pen on paper, or end of sketch). This means that:
+The values for ![](http://latex.codecogs.com/gif.latex?y_i) correspond to the values for the ![](http://latex.codecogs.com/gif.latex?M) Gaussian Mixture Models (GMM) for the next data point, and the type of stroke (lifted pen, pen on paper, or end of sketch). This means that:
 
-$$y_i = \Big[\big(\hat{\Pi}_1 \mu_x \mu_y \hat{\sigma}_x \hat{\sigma}_y \rho_{xy}\big)_1 \dots \big(\hat{\Pi}_1 \mu_x \mu_y \hat{\sigma}_x \hat{\sigma}_y \rho_{xy}\big)_M \big(\hat{q}_1 \hat{q}_2 \hat{q}_3\big)\Big]$$  
+![](http://latex.codecogs.com/gif.latex?%24%24y_i%20%3D%20%5CBig%5B%5Cbig%28%5Chat%7B%5CPi%7D_1%20%5Cmu_x%20%5Cmu_y%20%5Chat%7B%5Csigma%7D_x%20%5Chat%7B%5Csigma%7D_y%20%5Crho_%7Bxy%7D%5Cbig%29_1%20%5Cdots%20%5Cbig%28%5Chat%7B%5CPi%7D_1%20%5Cmu_x%20%5Cmu_y%20%5Chat%7B%5Csigma%7D_x%20%5Chat%7B%5Csigma%7D_y%20%5Crho_%7Bxy%7D%5Cbig%29_M%20%5Cbig%28%5Chat%7Bq%7D_1%20%5Chat%7Bq%7D_2%20%5Chat%7Bq%7D_3%5Cbig%29%5CBig%5D%24%24)
 
 With this values, the actual values for the distributions are calculated as follows.
 
-$$\sigma_{x} = exp(\hat{\sigma_{x}})$$
 
-$$\sigma_{y} = exp(\hat{\sigma_{y}})$$
-
-$$\rho_{xy} = f(\hat{\rho}_{xy})$$
-
-$$q_{k} = softmax(\hat{q}_{k})$$
-
-$$\Pi_{k} = softmax(\hat{\Pi}_{k})$$
+![](http://latex.codecogs.com/gif.latex?%5C%5C%20%24%24%5Csigma_%7Bx%7D%20%3D%20exp%28%5Chat%7B%5Csigma_%7Bx%7D%7D%29%24%24%20%5C%5C%20%24%24%5Csigma_%7By%7D%20%3D%20exp%28%5Chat%7B%5Csigma_%7By%7D%7D%29%24%24%20%5C%5C%20%24%24%5Crho_%7Bxy%7D%20%3D%20f%28%5Chat%7B%5Crho%7D_%7Bxy%7D%29%24%24%20%5C%5C%20%24%24q_%7Bk%7D%20%3D%20softmax%28%5Chat%7Bq%7D_%7Bk%7D%29%24%24%5C%5C%20%24%24%5CPi_%7Bk%7D%20%3D%20softmax%28%5Chat%7B%5CPi%7D_%7Bk%7D%29%24%24)
 
 From the previous expressions, the values for the next stroke can be sampled.
 
