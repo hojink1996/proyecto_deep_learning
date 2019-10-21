@@ -81,7 +81,7 @@ Once ![](http://latex.codecogs.com/gif.latex?%24h_%7B%5Cleftarrow%7D%24) and ![]
 
 ![](http://latex.codecogs.com/gif.latex?%24%24h%20%3D%20%5Bh_%7B%5Cleftarrow%7D%2C%20h_%7B%5Crightarrow%7D%5D%24%24)
 
-From the previous value we obtain (http://latex.codecogs.com/gif.latex?%5Csigma)) and (http://latex.codecogs.com/gif.latex?%5Cmu)), with the following equations.
+From the previous value we obtain ![](http://latex.codecogs.com/gif.latex?%5Csigma)) and ![](http://latex.codecogs.com/gif.latex?%5Cmu)), with the following equations.
 
 ![](http://latex.codecogs.com/gif.latex?%24%24%5Cmu%20%3D%20W_%7B%5Cmu%7Dh%20&plus;%20b_%7B%5Cmu%7D%24%24)
 
